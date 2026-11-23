@@ -1,0 +1,192 @@
+{
+  "info": {
+    "_postman_id": "82ed97ef-5460-498f-9f63-c2d4683aa50a",
+    "name": "LAB3 - API Produits Spring Data JPA",
+    "description": "Tests des catégories, produits persistés, pagination, commandes et erreurs. Démarre MySQL puis Spring Boot avant exécution.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "categoryId", "value": "1" },
+    { "key": "productId", "value": "1" },
+    { "key": "orderId", "value": "1" },
+    { "key": "timestamp", "value": "0" }
+  ],
+  "item": [
+    {
+      "name": "1. Créer une catégorie",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Catégorie {{timestamp}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/api/categories" }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": { "type": "text/javascript", "exec": ["pm.collectionVariables.set(\"timestamp\", Date.now().toString());"] }
+        },
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Catégorie créée : HTTP 201\", function () { pm.response.to.have.status(201); });",
+            "const category = pm.response.json();",
+            "pm.collectionVariables.set(\"categoryId\", category.id);"
+          ]}
+        }
+      ]
+    },
+    {
+      "name": "2. Lister les catégories",
+      "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/categories" } },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test(\"Liste des catégories : HTTP 200\", function () { pm.response.to.have.status(200); });",
+        "pm.test(\"La réponse est un tableau\", function () { pm.expect(pm.response.json()).to.be.an(\"array\"); });"
+      ]}}]
+    },
+    {
+      "name": "3. Créer un produit dans cette catégorie",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Produit {{timestamp}}\",\n  \"price\": 699.99,\n  \"categoryId\": {{categoryId}}\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/api/products" }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": { "type": "text/javascript", "exec": ["pm.collectionVariables.set(\"timestamp\", Date.now().toString());"] }
+        },
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Produit créé : HTTP 201\", function () { pm.response.to.have.status(201); });",
+            "const product = pm.response.json();",
+            "pm.collectionVariables.set(\"productId\", product.id);",
+            "pm.test(\"La réponse ne sérialise pas l'entité Category\", function () { pm.expect(product).to.have.property(\"categoryId\"); pm.expect(product).not.to.have.property(\"category\"); });"
+          ]}
+        }
+      ]
+    },
+    {
+      "name": "4. Lister les produits avec pagination",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/products?page=0&size=10&sort=name&direction=asc" }
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test(\"Pagination : HTTP 200\", function () { pm.response.to.have.status(200); });",
+        "pm.test(\"Réponse paginée Spring Data\", function () { pm.expect(pm.response.json().content).to.be.an(\"array\"); pm.expect(pm.response.json()).to.have.property(\"totalElements\"); });"
+      ]}}]
+    },
+    {
+      "name": "5. Lire le produit créé",
+      "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/products/{{productId}}" } },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test(\"Lecture produit : HTTP 200\", function () { pm.response.to.have.status(200); });",
+        "pm.test(\"Le produit inclut sa catégorie sans boucle JSON\", function () { pm.expect(pm.response.json()).to.have.property(\"categoryName\"); pm.expect(pm.response.json()).not.to.have.property(\"category\"); });"
+      ]}}]
+    },
+    {
+      "name": "6. Rechercher un produit par nom",
+      "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/products/search?name=Produit" } },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test(\"Recherche : HTTP 200\", function () { pm.response.to.have.status(200); });",
+        "pm.test(\"La recherche renvoie un tableau\", function () { pm.expect(pm.response.json()).to.be.an(\"array\"); });"
+      ]}}]
+    },
+    {
+      "name": "7. Lister les produits d'une catégorie",
+      "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/categories/{{categoryId}}/products" } },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test(\"Produits de catégorie : HTTP 200\", function () { pm.response.to.have.status(200); });",
+        "pm.test(\"La catégorie contient le produit créé\", function () { pm.expect(pm.response.json().some(p => p.id.toString() === pm.collectionVariables.get(\"productId\").toString())).to.eql(true); });"
+      ]}}]
+    },
+    {
+      "name": "8. Mettre à jour le produit",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Produit modifié {{timestamp}}\",\n  \"price\": 749.99,\n  \"categoryId\": {{categoryId}}\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/api/products/{{productId}}" }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": { "type": "text/javascript", "exec": ["pm.collectionVariables.set(\"timestamp\", Date.now().toString());"] }
+        },
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Mise à jour : HTTP 200\", function () { pm.response.to.have.status(200); });",
+            "pm.test(\"Le prix est mis à jour\", function () { pm.expect(pm.response.json().price).to.eql(749.99); });"
+          ]}
+        }
+      ]
+    },
+    {
+      "name": "9. Créer une commande avec ce produit",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\n    { \"productId\": {{productId}}, \"quantity\": 2 }\n  ]\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/api/orders" }
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test(\"Commande créée : HTTP 201\", function () { pm.response.to.have.status(201); });",
+        "const order = pm.response.json();",
+        "pm.collectionVariables.set(\"orderId\", order.id);",
+        "pm.test(\"La ligne et le total sont présents\", function () { pm.expect(order.items).to.have.lengthOf(1); pm.expect(order.total).to.eql(1499.98); });"
+      ]}}]
+    },
+    {
+      "name": "10. Lire la commande et ses lignes",
+      "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}" } },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test(\"Lecture commande : HTTP 200\", function () { pm.response.to.have.status(200); });",
+        "pm.test(\"Le produit est associé à la commande\", function () { pm.expect(pm.response.json().items[0].productId.toString()).to.eql(pm.collectionVariables.get(\"productId\").toString()); });"
+      ]}}]
+    },
+    {
+      "name": "11. Refuser les données invalides",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \" \",\n  \"price\": -1,\n  \"categoryId\": null\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/api/products" }
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test(\"Validation : HTTP 400\", function () { pm.response.to.have.status(400); });",
+        "pm.test(\"Les champs invalides sont indiqués\", function () { pm.expect(pm.response.json().fields).to.have.property(\"name\"); pm.expect(pm.response.json().fields).to.have.property(\"price\"); });"
+      ]}}]
+    },
+    {
+      "name": "12. Empêcher la suppression d'un produit commandé",
+      "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/products/{{productId}}" } },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test(\"Un produit commandé est protégé : HTTP 409\", function () { pm.response.to.have.status(409); });"
+      ]}}]
+    }
+  ]
+}
