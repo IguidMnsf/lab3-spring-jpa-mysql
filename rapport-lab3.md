@@ -23,21 +23,26 @@ Le projet fournit Docker Compose pour démarrer MySQL. Les tests utilisent une b
 
 La commande `mvn clean verify` a été exécutée avec Java 21. Les **5 tests d'intégration H2 ont réussi**, sans échec ni erreur. Ils couvrent les opérations principales, les relations, la pagination, les commandes, la validation et les erreurs métier.
 
-La configuration Docker Compose a été analysée avec `docker compose config`. Le moteur Docker n'était pas démarré lors de la révision ; par conséquent, la connexion à un serveur MySQL réel n'a pas été vérifiée durant cette session. Les captures de démarrage MySQL et de démonstration Postman doivent être prises lors d'une exécution locale.
+La configuration Docker Compose a été analysée avec `docker compose config`. Une démonstration ultérieure a utilisé une instance MySQL locale distincte de Docker : une catégorie, un produit et une commande ont été créés dans Postman.
 
 ## 4. Conclusion
 
 Le laboratoire met en place une API structurée dont les données sont persistées dans MySQL et manipulées avec JPA. Les tests H2 valident le comportement applicatif sans exiger un serveur de base de données pendant la suite automatisée.
 
-## 5. Captures à joindre
+## 5. Captures des exécutions
 
-Les captures doivent être prises après exécution réelle sur l'ordinateur utilisé pour la démonstration :
+**Création de la catégorie — HTTP 201 :**
 
-1. Docker Desktop ou MySQL local démarré.
-2. Terminal PowerShell montrant Spring Boot connecté à la base.
-3. Postman affichant une catégorie et un produit créés, avec leurs identifiants.
-4. Postman affichant la création d'une commande et son total.
-5. Facultatif : refus de suppression d'un produit commandé (`409 Conflict`).
-6. Page GitHub du projet ou résultat du workflow GitHub Actions.
+![Création d'une catégorie dans Postman](captures-rapport/05-postman-categorie.png)
 
-**Aucune capture d'écran n'est intégrée à ce rapport.**
+**Création du produit lié à la catégorie — HTTP 201 :**
+
+![Création d'un produit dans Postman](captures-rapport/06-postman-produit.png)
+
+**Création d'une commande et calcul du total — HTTP 201 :**
+
+![Création d'une commande dans Postman](captures-rapport/07-postman-commande.png)
+
+**Tests automatisés — `mvn test` :**
+
+![Résultat des tests Maven](captures-rapport/03-terminal-mvn-test.png)
